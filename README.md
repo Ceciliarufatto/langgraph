@@ -53,6 +53,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## 🎬 Demo em Ação
+
+![Demo LangGraph](demo_langgraph.gif)
+
+**Demonstração:** Sistema processando diferentes tipos de mensagens, detectando intenção e roteando para handlers apropriados.
+
 ## 💬 Exemplos de Uso
 
 ```
@@ -61,6 +67,11 @@ python main.py
 
 👤 Você: Esqueci minha senha
 🤖 Bot: 🆘 Entendo que você precisa de suporte técnico...
+
+👤 Você: history
+📜 Histórico da Conversa:
+   1. Quero rastrear meu pedido
+   2. Esqueci minha senha
 
 👤 Você: sair
 👋 Encerrando... Até logo!
@@ -80,8 +91,22 @@ langgraph/
 ├── tests.py                      # Testes
 ├── requirements.txt              # Dependências
 ├── .env.example                  # Exemplo de env
+├── demo_langgraph.gif            # Demonstração animada
 └── README.md                     # Este arquivo
 ```
+
+## 📈 Métricas do Projeto
+
+| Métrica | Valor |
+|---------|-------|
+| Linhas de Código Python | ~650 |
+| Funções Implementadas | 15+ |
+| Nós do Grafo | 4 |
+| Tipos de Intenção | 3 |
+| Testes Unitários | 14 |
+| Cobertura | 100% |
+| Commits | 2 |
+| Stack Técnica | Python, LangGraph, LangChain |
 
 ## 🔄 Fluxo de Funcionamento
 
