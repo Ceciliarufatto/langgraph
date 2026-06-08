@@ -1,0 +1,194 @@
+% =============================================================================
+% One-pager A4 - G1: LangGraph e Orquestracao Baseada em Grafos
+% Para distribuir aos visitantes da sessao de paineis.
+% Compilar: pdflatex one_pager.tex (no Overleaf, defina como main document)
+% Imagens em metrics/ (mesmo esquema do painel).
+% =============================================================================
+
+\documentclass[a4paper,10pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage[a4paper, margin=12mm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{lmodern}
+
+\definecolor{lgPrimary}{HTML}{1F3A93}
+\definecolor{lgSoft}{HTML}{F4F6FB}
+
+\hypersetup{colorlinks=true, urlcolor=lgPrimary, linkcolor=lgPrimary}
+
+\setlist{nosep, leftmargin=*}
+\titleformat{\section}{\color{lgPrimary}\bfseries\large}{}{0pt}{}
+\titleformat{\subsection}{\color{lgPrimary}\bfseries\normalsize}{}{0pt}{}
+\titlespacing*{\section}{0pt}{6pt}{2pt}
+\titlespacing*{\subsection}{0pt}{4pt}{2pt}
+
+\setlength{\columnsep}{6mm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+
+\pagestyle{empty}
+
+\begin{document}
+
+% =============================================================================
+% FRENTE
+% =============================================================================
+\begin{center}
+{\Large\bfseries\color{lgPrimary} LangGraph e Orquestração Baseada em Grafos}\\[2pt]
+{\small Agentes de IA -- Grupo G1 \quad $|$ \quad Cecilia Rufatto, Felipe Proença, Leonardo Moino, Leonardo Quartaroli, Lorena Scabello}
+\end{center}
+
+\vspace{2pt}\hrule\vspace{4pt}
+
+\begin{multicols}{2}
+
+\section*{Contexto}
+Frameworks lineares como o LangChain tradicional executam etapas em ordem fixa, sem suporte nativo a ciclos, estado persistente ou decisões condicionais. O LangGraph cobre essa lacuna tratando o agente como um grafo de estados: nós são funções sobre o estado, arestas decidem o caminho e \emph{checkpointers} oficiais cuidam da persistência.
+
+\section*{Conceitos-chave}
+\begin{itemize}
+\item \textbf{StateGraph} --- grafo cujo estado é um \texttt{TypedDict} compartilhado entre nós.
+\item \textbf{Node} --- função Python que recebe e devolve o estado.
+\item \textbf{Conditional Edge} --- roteamento dinâmico via \texttt{router(state)}.
+\item \textbf{Reducer} --- estratégia de \emph{merge} para campos do estado.
+\item \textbf{Checkpointer} --- persistência entre execuções (SQLite, Postgres, Redis).
+\item \textbf{HITL} --- pausa via \texttt{interrupt} e retoma com \texttt{Command}.
+\end{itemize}
+
+\columnbreak
+
+\section*{Arquitetura do protótipo}
+\centering
+\includegraphics[width=0.95\linewidth]{metrics/graph.png}\\[2pt]
+\raggedright\small
+Cada mensagem é processada pelo \texttt{detect\_intent}, rotulada como \emph{pedido}, \emph{suporte} ou \emph{geral}, e despachada pela aresta condicional \texttt{route\_intent} pro handler. Cada handler grava o histórico em JSON pelo \texttt{memory.py}.
+
+\end{multicols}
+
+\vspace{2pt}\hrule\vspace{4pt}
+
+\section*{Resultados em um dataset de 40 mensagens (pt-BR)}
+
+\begin{multicols}{2}
+
+\begin{tabular}{@{} l r @{}}
+\toprule
+\textbf{Métrica}      & \textbf{Valor} \\
+\midrule
+Accuracy              & \textbf{85,00\%} \\
+Macro F1              & 0,8507 \\
+Latência média        & 33,52 ms \\
+Latência P95          & $\sim$56 ms \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\begin{tabular}{@{} l r r r @{}}
+\toprule
+\textbf{Classe} & \textbf{P} & \textbf{R} & \textbf{F1} \\
+\midrule
+pedido   & 0,92 & 0,80 & 0,86 \\
+suporte  & 0,92 & 0,85 & 0,88 \\
+geral    & 0,73 & 0,92 & 0,81 \\
+\bottomrule
+\end{tabular}
+
+\columnbreak
+
+\centering
+\includegraphics[width=0.85\linewidth]{metrics/confusion_matrix.png}
+
+\end{multicols}
+
+\vfill
+\begin{center}
+\small\color{lgPrimary}\textbf{Verso:} estado da arte, limitações, próximos passos e referências.
+\end{center}
+
+\newpage
+
+% =============================================================================
+% VERSO
+% =============================================================================
+\begin{center}
+{\Large\bfseries\color{lgPrimary} Estado da arte, discussão e referências}
+\end{center}
+
+\vspace{2pt}\hrule\vspace{4pt}
+
+\section*{Estado da arte}
+
+\begin{multicols}{2}
+
+\subsection*{Linha do tempo}
+\begin{itemize}
+\item \textbf{2022} -- LangChain lança \emph{chains} lineares.
+\item \textbf{Jan/2024} -- LangGraph 0.0.x: primeira versão pública.
+\item \textbf{Mai/2024} -- LangGraph Studio + Cloud.
+\item \textbf{2025} -- LangGraph 1.x estável com \emph{durable execution}.
+\end{itemize}
+
+\columnbreak
+
+\subsection*{Comparativo}
+\begin{tabular}{@{} p{0.30\linewidth} p{0.30\linewidth} p{0.30\linewidth} @{}}
+\toprule
+\textbf{Framework} & \textbf{Ciclos} & \textbf{Persistência} \\
+\midrule
+LangGraph    & Nativo   & Checkpointers \\
+CrewAI       & Limitado & Memory mod. \\
+AutoGen      & Por chat & Externa \\
+Swarm        & Não      & Não \\
+\bottomrule
+\end{tabular}
+
+\end{multicols}
+
+\vspace{2pt}\hrule\vspace{4pt}
+
+\section*{O que funcionou}
+A combinação de StateGraph com aresta condicional deixou o roteamento declarativo e fácil de testar --- dá pra escrever evals direto sobre o grafo compilado. Persistência em JSON foi suficiente para o protótipo, e a latência abaixo de 60 ms no P95 mantém o agente confortável em chat síncrono.
+
+\section*{Limitações observadas}
+A classificação por keywords não captura semântica: a classe \texttt{geral} acaba absorvendo qualquer frase que não bate com as outras --- daí o \emph{precision} de 0,73. Mensagens multi-intenção, como ``meu produto chegou quebrado e quero suporte'', são forçadas a uma única rota. Também não tem suporte a contexto profundo entre turnos.
+
+\section*{Próximos passos}
+Trocar o \texttt{detect\_intent} por um classificador LLM \emph{few-shot} com saída estruturada via Pydantic; adicionar um nó de Human-in-the-Loop para casos em que o \texttt{confidence} fique baixo; e migrar a persistência JSON para um \texttt{SqliteSaver}, ganhando \emph{durable execution}.
+
+\vspace{2pt}\hrule\vspace{4pt}
+
+\section*{Referências principais (ABNT NBR 6023)}
+\footnotesize
+\begin{enumerate}
+\item LANGCHAIN AI. \textbf{LangGraph -- Overview and Graph API}. Documentação oficial, 2024. \texttt{langchain-ai.github.io/langgraph/}.
+\item LANGCHAIN AI. \textbf{Persistence and Checkpointers}. 2024. \texttt{langchain-ai.github.io/langgraph/concepts/persistence/}.
+\item LANGCHAIN AI. \textbf{Human-in-the-loop}. 2024. \texttt{langchain-ai.github.io/langgraph/concepts/human\_in\_the\_loop/}.
+\item WU, Q. \emph{et al.} \textbf{AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation}. arXiv:2308.08155, 2023.
+\item YAO, S. \emph{et al.} \textbf{ReAct: Synergizing Reasoning and Acting in Language Models}. ICLR, 2023.
+\item OPENAI. \textbf{Swarm}. GitHub, 2024.
+\item LANGCHAIN AI. \textbf{LangGraph Academy}. \texttt{academy.langchain.com/courses/intro-to-langgraph}.
+\end{enumerate}
+
+\normalsize
+\vspace{4pt}\hrule\vspace{4pt}
+
+\begin{minipage}[c]{0.70\linewidth}
+\textbf{\color{lgPrimary} Repositório do grupo}\\
+\texttt{github.com/Ceciliarufatto/langgraph}\\[2pt]
+Código-fonte, dataset, métricas, painel e demo em GIF.
+\end{minipage}\hfill
+\begin{minipage}[c]{0.25\linewidth}
+\centering
+\includegraphics[width=0.85\linewidth]{metrics/qrcode_repo.png}
+\end{minipage}
+
+\end{document}

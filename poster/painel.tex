@@ -1,0 +1,200 @@
+% =============================================================================
+% Painel A1 - G1: LangGraph e Orquestracao Baseada em Grafos
+% EN-045 - Agentes de IA
+% Compilar com: pdflatex painel.tex  (rodar 2x)
+% Recomendado: Overleaf (menu -> Compiler: pdfLaTeX)
+% =============================================================================
+
+\documentclass[25pt, a1paper, portrait, margin=20mm, innermargin=15mm,
+               blockverticalspace=12mm, colspace=15mm, subcolspace=8mm]{tikzposter}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+
+% ---------- Tema --------------------------------------------------------------
+\usetheme{Default}
+\usecolorstyle{Britain}
+\useblockstyle{Default}
+\usetitlestyle{Default}
+
+\definecolor{lgPrimary}{HTML}{1F3A93}
+\definecolor{lgAccent}{HTML}{E67E22}
+\definecolor{lgSoft}{HTML}{F4F6FB}
+
+\colorlet{blocktitlebgcolor}{lgPrimary}
+\colorlet{blocktitlefgcolor}{white}
+\colorlet{blockbodybgcolor}{lgSoft}
+
+% ---------- Metadados ---------------------------------------------------------
+\title{LangGraph e Orquestração Baseada em Grafos}
+\author{Cecilia Rufatto \quad Felipe Proença \quad Leonardo Moino \quad Leonardo Quartaroli \quad Lorena Scabello}
+\institute{Agentes de IA \quad $|$ \quad Grupo G1}
+
+\begin{document}
+
+\maketitle
+
+% =============================================================================
+% LINHA 1 - Contexto + Conceitos-chave
+% =============================================================================
+\begin{columns}
+
+\column{0.5}
+\block{1. Contexto e motivação}{
+Frameworks lineares como o LangChain tradicional executam etapas em ordem fixa. Funciona bem em fluxos curtos e determinísticos, mas agentes de verdade costumam precisar de coisas que esse modelo não entrega de forma nativa:
+
+\begin{itemize}
+  \item ciclos, pra refletir ou retentar uma etapa;
+  \item estado persistente entre execuções;
+  \item decisões condicionais que dependem do que aconteceu antes;
+  \item pausa e retomada com intervenção humana.
+\end{itemize}
+
+\vspace{2pt}
+O LangGraph cobre essa lacuna tratando o agente como um grafo: cada nó é uma função sobre o estado, as arestas decidem o caminho, e \textit{checkpointers} oficiais cuidam da persistência. É a base do LangSmith, do LangChain Academy e de agentes em produção em empresas como Klarna, Replit e Elastic.
+}
+
+\column{0.5}
+\block{2. Conceitos-chave}{
+\begin{tabular}{@{} >{\bfseries}p{0.30\linewidth} p{0.65\linewidth} @{}}
+\toprule
+StateGraph & Grafo cujo estado é um \texttt{TypedDict} compartilhado entre nós. \\
+Node & Função Python que recebe e devolve estado. \\
+Edge & Conexão direta entre dois nós (\texttt{add\_edge}). \\
+Conditional Edge & Roteamento dinâmico via função \texttt{router(state)}. \\
+Reducer & Estratégia de \emph{merge} de campos do estado (ex.\ \texttt{add\_messages}). \\
+Checkpointer & Persistência do estado entre execuções (SQLite, Postgres, Redis). \\
+HITL & \textit{Human-in-the-loop}: pausa com \texttt{interrupt} e retoma via \texttt{Command}. \\
+\bottomrule
+\end{tabular}
+}
+
+\end{columns}
+
+% =============================================================================
+% LINHA 2 - Estado da arte + Arquitetura
+% =============================================================================
+\begin{columns}
+
+\column{0.5}
+\block{3. Estado da arte}{
+\textbf{Linha do tempo}\\[2pt]
+\begin{tabular}{@{} p{0.18\linewidth} p{0.78\linewidth} @{}}
+\toprule
+\textbf{2022} & LangChain --- \textit{chains} lineares para composição de LLMs. \\
+\textbf{Jan 2024} & LangGraph 0.0.x --- primeira versão pública. \\
+\textbf{Mai 2024} & LangGraph Studio + Cloud --- observabilidade e deploy. \\
+\textbf{2025} & LangGraph 1.x estável --- \emph{checkpointers}, durable execution. \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\textbf{Comparativo com frameworks concorrentes}\\[2pt]
+\begin{tabular}{@{} p{0.22\linewidth} p{0.20\linewidth} p{0.20\linewidth} p{0.28\linewidth} @{}}
+\toprule
+\textbf{Framework} & \textbf{Estado} & \textbf{Ciclos} & \textbf{Persistência} \\
+\midrule
+LangGraph    & Tipado    & Nativo  & Checkpointers oficiais \\
+CrewAI       & Implícito & Limitado & Memory module \\
+AutoGen      & Mensagens & Por chat & Externa \\
+OpenAI Swarm & Handoffs  & Não     & Não (experimental) \\
+\bottomrule
+\end{tabular}
+}
+
+\column{0.5}
+\block{4. Arquitetura do protótipo}{
+\centering
+\includegraphics[width=0.95\linewidth]{metrics/graph.png}\\[6pt]
+\raggedright
+Cada mensagem que entra é processada pelo nó \texttt{detect\_intent}, que rotula como \textit{pedido}, \textit{suporte} ou \textit{geral}. A aresta condicional \texttt{route\_intent} despacha pro handler correspondente, que responde e grava o histórico em JSON pelo \texttt{memory.py} antes de chegar ao \texttt{END}.\\[4pt]
+
+O estado é um \texttt{TypedDict} (\texttt{AgentState}) com os campos \texttt{message, intent, confidence, response, history, metadata, timestamp} e \texttt{session\_id}.
+}
+
+\end{columns}
+
+% =============================================================================
+% LINHA 3 - Experimento + Discussao
+% =============================================================================
+\begin{columns}
+
+\column{0.5}
+\block{5. Experimento e resultados}{
+Montamos um dataset de 40 mensagens em português rotuladas em três intenções (\texttt{pedido}=15, \texttt{suporte}=13, \texttt{geral}=12). Cada mensagem passa pelo grafo compilado; medimos latência com \texttt{time.perf\_counter} e calculamos as métricas com \texttt{scikit-learn}.\\[4pt]
+
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\textbf{Métricas globais}\\[2pt]
+\begin{tabular}{@{} l r @{}}
+\toprule
+Accuracy        & \textbf{85{,}00\%} \\
+Macro F1        & 0{,}8507 \\
+Latência média  & 33{,}52 ms \\
+Latência P95    & $\sim$56 ms \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\textbf{Por classe}\\[2pt]
+\begin{tabular}{@{} l r r r @{}}
+\toprule
+Classe   & P     & R     & F1 \\
+\midrule
+pedido   & 0{,}92 & 0{,}80 & 0{,}86 \\
+suporte  & 0{,}92 & 0{,}85 & 0{,}88 \\
+geral    & 0{,}73 & 0{,}92 & 0{,}81 \\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{metrics/confusion_matrix.png}\\
+\small Matriz de confusão (n=40)
+\end{minipage}
+}
+
+\column{0.5}
+\block{6. Discussão e limitações}{
+\textbf{O que funcionou.} A combinação de StateGraph com aresta condicional deixou o roteamento declarativo e fácil de testar --- conseguimos escrever evals direto sobre o grafo compilado. Persistência em JSON foi suficiente para o protótipo, e a latência abaixo de 60 ms no P95 mantém o agente confortável dentro de um chat síncrono.\\[4pt]
+
+\textbf{Limitações.} Classificar por keywords não captura semântica: a classe \texttt{geral} acaba absorvendo qualquer frase que não casa explicitamente com as outras --- daí o \emph{precision} de 0{,}73. Mensagens multi-intenção, como ``meu produto chegou quebrado e quero suporte'', são forçadas a uma única rota. Também não há suporte a contexto profundo entre turnos.\\[4pt]
+
+\textbf{Próximos passos.} Trocar o \texttt{detect\_intent} por um classificador LLM \emph{few-shot} com saída estruturada via Pydantic; adicionar um nó de Human-in-the-Loop para casos em que o \texttt{confidence} fique baixo; e migrar a persistência JSON para um \texttt{SqliteSaver}, ganhando \emph{durable execution}.
+}
+
+\end{columns}
+
+% =============================================================================
+% RODAPE - Referencias + QR Code
+% =============================================================================
+\block[bodyoffsety=10mm, titleoffsety=10mm]{Referências e repositório}{
+\begin{minipage}[c]{0.78\linewidth}
+\footnotesize
+\begin{enumerate}
+  \item LANGCHAIN AI. \textbf{LangGraph --- Overview and Graph API}. Documentação oficial. Disponível em: \texttt{langchain-ai.github.io/langgraph/}.
+  \item LANGCHAIN AI. \textbf{Persistence and Checkpointers}. \texttt{langchain-ai.github.io/langgraph/concepts/persistence/}.
+  \item LANGCHAIN AI. \textbf{Human-in-the-loop}. \texttt{langchain-ai.github.io/langgraph/concepts/human\_in\_the\_loop/}.
+  \item WU, Q. \emph{et al.} \textbf{AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation}. arXiv:2308.08155, 2023.
+  \item YAO, S. \emph{et al.} \textbf{ReAct: Synergizing Reasoning and Acting in Language Models}. ICLR, 2023.
+  \item OPENAI. \textbf{Swarm}: educational framework for multi-agent orchestration. GitHub, 2024.
+  \item LANGCHAIN AI. \textbf{LangGraph Academy} --- curso oficial. \texttt{academy.langchain.com/courses/intro-to-langgraph}.
+\end{enumerate}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.20\linewidth}
+\centering
+\includegraphics[width=0.85\linewidth]{metrics/qrcode_repo.png}\\
+\footnotesize \textbf{Repositório do grupo}\\
+\texttt{github.com/Ceciliarufatto/langgraph}
+\end{minipage}
+}
+
+\end{document}

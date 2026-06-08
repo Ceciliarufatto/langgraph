@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-06-07T18:21:13.700990",
+  "dataset_size": 40,
+  "labels": [
+    "pedido",
+    "suporte",
+    "geral"
+  ],
+  "accuracy": 0.85,
+  "macro_f1": 0.8507,
+  "per_class": {
+    "pedido": {
+      "precision": 0.9231,
+      "recall": 0.8,
+      "f1": 0.8571,
+      "support": 15
+    },
+    "suporte": {
+      "precision": 0.9167,
+      "recall": 0.8462,
+      "f1": 0.88,
+      "support": 13
+    },
+    "geral": {
+      "precision": 0.7333,
+      "recall": 0.9167,
+      "f1": 0.8148,
+      "support": 12
+    }
+  },
+  "confusion_matrix": [
+    [
+      12,
+      1,
+      2
+    ],
+    [
+      0,
+      11,
+      2
+    ],
+    [
+      1,
+      0,
+      11
+    ]
+  ],
+  "latency_ms": {
+    "mean": 33.521,
+    "p50": 33.89,
+    "p95": 39.051,
+    "max": 43.757
+  },
+  "confidence": {
+    "mean": 0.675,
+    "min": 0.3,
+    "max": 0.9
+  }
+}
