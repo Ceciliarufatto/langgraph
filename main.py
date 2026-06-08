@@ -14,6 +14,7 @@ from app.memory import (
     clear_memory,
     list_checkpoints,
 )
+from app.state import build_agent_state
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,18 +60,63 @@ def print_history(history):
     if not history:
         print("\n📝 Histórico vazio\n")
         return
-    
+
     print("\n" + "=" * 70)
     print("📜 Histórico da Conversa")
     print("=" * 70)
-    
+
     for i, msg in enumerate(history, 1):
         if msg.startswith("user: "):
             print(f"\n{i//2 + 1}. 👤 {msg[6:]}")
         elif msg.startswith("assistant: "):
             print(f"   🤖 {msg[11:]}")
-    
+
     print("\n" + "=" * 70 + "\n")
+
+
+def _handle_clear(session_id: str) -> list:
+    clear_memory(session_id)
+    print("✅ Histórico limpo!\n")
+    logger.info(f"Memory cleared for session: {session_id}")
+    return []
+
+
+def _handle_history(history):
+    print_history(history)
+    return history
+
+
+def _handle_checkpoints(session_id: str, history):
+    checkpoints = list_checkpoints(session_id)
+    if not checkpoints:
+        print("\n📌 Nenhum checkpoint salvo ainda\n")
+    else:
+        print("\n📌 Checkpoints disponíveis:")
+        for cp in checkpoints:
+            print(f"   - {cp}")
+        print()
+    return history
+
+
+def _handle_help(history):
+    print_help()
+    return history
+
+
+def _execute_command(command: str, session_id: str, history):
+    if command == "sair":
+        logger.info(f"Session ended by user: {session_id}")
+        print("\n👋 Encerrando... Até logo!")
+        return "exit"
+
+    handlers = {
+        "limpar": lambda: _handle_clear(session_id),
+        "history": lambda: _handle_history(history),
+        "checkpoints": lambda: _handle_checkpoints(session_id, history),
+        "help": lambda: _handle_help(history),
+    }
+
+    return handlers.get(command, lambda: None)()
 
 
 def main():
@@ -91,49 +137,16 @@ def main():
             if not user_input:
                 continue
             
-            if user_input.lower() == "sair":
-                logger.info(f"Session ended by user: {session_id}")
-                print("\n👋 Encerrando... Até logo!")
+            command_result = _execute_command(user_input.lower(), session_id, history)
+            if command_result == "exit":
                 break
-            
-            if user_input.lower() == "limpar":
-                clear_memory(session_id)
-                history = []
-                print("✅ Histórico limpo!\n")
-                logger.info(f"Memory cleared for session: {session_id}")
+            if command_result is not None:
+                history = command_result
                 continue
-            
-            if user_input.lower() == "history":
-                print_history(history)
-                continue
-            
-            if user_input.lower() == "checkpoints":
-                checkpoints = list_checkpoints(session_id)
-                if not checkpoints:
-                    print("\n📌 Nenhum checkpoint salvo ainda\n")
-                else:
-                    print("\n📌 Checkpoints disponíveis:")
-                    for cp in checkpoints:
-                        print(f"   - {cp}")
-                    print()
-                continue
-            
-            if user_input.lower() == "help":
-                print_help()
-                continue
-            
+
             logger.info(f"Processing message for session {session_id}")
-            
-            result = graph.invoke({
-                "message": user_input,
-                "intent": "",
-                "confidence": 0.0,
-                "response": "",
-                "history": history,
-                "metadata": {"timestamp": datetime.now().isoformat()},
-                "timestamp": datetime.now().isoformat(),
-                "session_id": session_id
-            })
+
+            result = graph.invoke(build_agent_state(user_input, session_id, history))
             
             response = result.get('response', 'Desculpe, não consegui processar sua mensagem')
             

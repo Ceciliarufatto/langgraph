@@ -21,29 +21,36 @@ Roteiro pra falar com quem parar no painel. Duração-alvo: 4 minutos, com folga
 
 ### Leonardo Quartaroli — conceitos
 
-"Os conceitos centrais são cinco. Primeiro o StateGraph, que é o grafo em si, com um estado tipado em TypedDict que todos os nós compartilham. Node é uma função Python que recebe o estado e devolve o estado. Conditional Edge é uma aresta condicional — uma função decide pra qual nó ir baseado no estado atual. Reducer define como o estado se atualiza quando dois nós escrevem no mesmo campo. E Checkpointer é a persistência: salva o estado entre execuções em SQLite, Postgres ou Redis. Ainda tem o Human-in-the-Loop, que pausa o grafo esperando input humano."
+"Os pontos principais são:
+- `StateGraph`: grafo de estados com `TypedDict` compartilhado.
+- `Node`: função Python que recebe o estado e devolve o estado.
+- `Conditional Edge`: decisão condicional que escolhe o próximo nó com base no estado.
+- `Reducer`: regra de mesclagem quando vários nós atualizam o mesmo campo.
+- `Checkpointer`: persistência entre execuções.
+- `Human-in-the-Loop`: opção de pausar o grafo para input humano."
 
 ### Leonardo Moino — estado da arte e arquitetura
 
-"Em 2022 a LangChain lançou chains lineares. Em 2024 saiu o LangGraph 0.0.x, e em 2025 a versão 1.0 estável com durable execution. Comparando com concorrentes: CrewAI tem ciclos limitados, AutoGen organiza tudo por chat entre agentes, OpenAI Swarm não tem persistência nativa. LangGraph é o único com estado tipado, ciclos e checkpointers oficiais ao mesmo tempo.
+"Em 2022 a LangChain popularizou pipelines lineares; em 2024 surgiu o LangGraph 0.0.x e em 2025 a versão 1.0 com durable execution. Diferente de CrewAI, AutoGen e OpenAI Swarm, o LangGraph combina estado tipado, ciclos e checkpointers nativos.
 
-Nosso protótipo é um agente de atendimento ao cliente. Esse aqui é o grafo (apontar): a mensagem entra em `detect_intent`, é rotulada em pedido, suporte ou geral, e a aresta condicional `route_intent` despacha pro handler. Cada handler responde e grava o histórico em JSON."
+No protótipo de atendimento, a entrada passa por `detect_intent`, é classificada em `pedido`, `suporte` ou `geral`, e `route_intent` dispara o handler correto. Cada handler gera a resposta e grava o histórico em JSON."
 
 ### Felipe — experimento
 
-"A gente montou um dataset de 40 mensagens em português rotuladas nessas três classes. Rodamos cada mensagem no grafo compilado, medindo latência com `time.perf_counter` e métricas com scikit-learn.
+"Montamos um dataset de 40 mensagens em português rotuladas em três classes. Cada frase foi processada pelo grafo compilado; latência foi medida com `time.perf_counter` e métricas foram calculadas com scikit-learn.
 
-Os resultados (apontar tabela): accuracy de 85%, Macro F1 de 0,85, latência média de 33 ms — P95 em 56, ou seja, viável pra chat síncrono. Por classe, pedido e suporte ficam com F1 acima de 0,86. A matriz de confusão (apontar) mostra que os erros se concentram em frases que caem na classe geral, que funciona como fallback.
-
-No GitHub tem um GIF curto da CLI: usuário manda 'quero rastrear meu pedido', o grafo roteia pro nó pedido; manda 'esqueci minha senha', vai pro suporte. Tudo persistido entre execuções."
+Resultados: accuracy de 85%, Macro F1 de 0,85, latência média de 33 ms e P95 de 56 ms. `pedido` e `suporte` alcançaram F1 acima de 0,86; a classe `geral` agrega as frases ambíguas e domina os erros. O GIF no GitHub mostra os roteamentos ao vivo: um pedido vai para `pedido`, uma senha perdida vai para `suporte`, e o histórico é mantido."
 
 ### Lorena — discussão
 
-"Do lado positivo, o StateGraph deixou o roteamento declarativo e testável — dá pra escrever testes em cima do grafo compilado direto. A persistência em JSON foi suficiente pro protótipo.
+"O StateGraph torna o roteamento declarativo e testável; a persistência em JSON foi adequada para o protótipo.
 
-A limitação principal é que a classificação por keywords não captura semântica. A classe geral tem precision 0,73 porque vira sumidouro de frases ambíguas. Mensagens multi-intenção, tipo 'meu produto chegou quebrado e quero suporte', são forçadas a uma única rota.
+A principal limitação é a classificação por keywords, que não captura semântica. A classe `geral` tem precision 0,73 porque agrega sentenças ambíguas, e mensagens multi-intenção acabam forçadas a uma rota única.
 
-A evolução natural são três passos: trocar o classificador por LLM few-shot com saída estruturada via Pydantic; adicionar nó de Human-in-the-Loop quando o confidence for baixo; e migrar a persistência pra SqliteSaver pra ter durable execution."
+Evolução natural:
+- trocar o classificador por LLM few-shot com saída estruturada via Pydantic;
+- incluir Human-in-the-Loop quando a confiança for baixa;
+- migrar a persistência para `SqliteSaver` para durable execution."
 
 ### Fecho
 

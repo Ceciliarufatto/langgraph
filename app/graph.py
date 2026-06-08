@@ -20,31 +20,29 @@ logger = logging.getLogger(__name__)
 def build_graph():
     """Constrói e compila o grafo de estados para o agente."""
     graph = StateGraph(AgentState)
-    
     logger.info("Building LangGraph agent graph...")
-    
-    graph.add_node("detect_intent", detect_intent)
-    graph.add_node("pedido", order_response)
-    graph.add_node("suporte", support_response)
-    graph.add_node("geral", general_response)
-    
+
+    node_handlers = {
+        "detect_intent": detect_intent,
+        "pedido": order_response,
+        "suporte": support_response,
+        "geral": general_response,
+    }
+
+    for node_name, node_fn in node_handlers.items():
+        graph.add_node(node_name, node_fn)
+
     graph.set_entry_point("detect_intent")
-    
     graph.add_conditional_edges(
         "detect_intent",
         route_intent,
-        {
-            "pedido": "pedido",
-            "suporte": "suporte",
-            "geral": "geral"
-        }
+        {node_name: node_name for node_name in node_handlers if node_name != "detect_intent"}
     )
-    
-    graph.add_edge("pedido", END)
-    graph.add_edge("suporte", END)
-    graph.add_edge("geral", END)
-    
+
+    for node_name in node_handlers:
+        if node_name != "detect_intent":
+            graph.add_edge(node_name, END)
+
     compiled = graph.compile()
     logger.info("Graph compiled successfully")
-    
     return compiled
