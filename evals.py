@@ -31,6 +31,7 @@ from sklearn.metrics import (
 )
 
 from app.graph import build_graph
+from app.state import build_agent_state
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -62,16 +63,9 @@ def run_evaluation():
         msg, label = sample["message"], sample["label"]
 
         start = time.perf_counter()
-        result = graph.invoke({
-            "message": msg,
-            "intent": "",
-            "confidence": 0.0,
-            "response": "",
-            "history": [],
-            "metadata": {"eval": True},
-            "timestamp": datetime.now().isoformat(),
-            "session_id": session_id,
-        })
+        result = graph.invoke(
+            build_agent_state(msg, session_id, history=[], metadata={"eval": True})
+        )
         elapsed_ms = (time.perf_counter() - start) * 1000.0
 
         y_true.append(label)

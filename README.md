@@ -12,44 +12,17 @@ Este projeto implementa um agente conversacional que:
 
 ## 🚀 Como Executar
 
-### Pré-requisitos
+Pré-requisitos:
 - Python 3.9 ou superior
-- pip (gerenciador de pacotes Python)
-
-### Passo 1: Clonar o repositório
+- pip
 
 ```bash
 git clone https://github.com/Ceciliarufatto/langgraph.git
 cd langgraph
-```
-
-### Passo 2: Criar ambiente virtual
-
-```bash
 python -m venv venv
-```
-
-### Passo 3: Ativar ambiente virtual
-
-**No macOS/Linux:**
-```bash
-source venv/bin/activate
-```
-
-**No Windows:**
-```bash
-venv\Scripts\activate
-```
-
-### Passo 4: Instalar dependências
-
-```bash
+source venv/bin/activate        # macOS/Linux
+# venv\Scripts\activate      # Windows
 pip install -r requirements.txt
-```
-
-### Passo 5: Executar o agente
-
-```bash
 python main.py
 ```
 
